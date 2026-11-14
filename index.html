@@ -553,7 +553,7 @@ function tnew(){modal(`<h2>اعمل فريق جديد</h2><label>اسم الفر
 function tdetail(id){const t=TM.find(x=>x.id==id);if(!t)return;const mem=tIs(t),vis=mem||adm;modal(`<h2 class="ugc">${esc(t.name)}</h2><small class="ugc" style="color:var(--mu)">${esc(t.lab)} • 👥 ${num(t.m.length)} / ${num(t.max)}</small>${t.desc?`<p class="ugc">${esc(t.desc)}</p>`:''}<h4>الأعضاء</h4>${t.m.map(m=>`<div class="rq"><span class="ugc"><b>${esc(m.n)}</b>${m.lead?' 👑':''}${vis?`<br><small style="color:var(--mu)">📞 ${esc(m.ph)}${adm?' • 🆔 '+esc(m.sid):''}</small>`:''}</span>${adm?`<button class="sm no" data-tk="${t.id}:${m.id}">طرد</button>`:''}</div>`).join('')}${mem?`<button class="chip" data-tlv="${t.id}" style="margin-top:12px">🚪 اترك الفريق</button>`:tFull(t)?'<div class="note er">الفريق مكتمل</div>':`<h4>انضم للفريق</h4>${tfields()}<button class="cta" data-tj="${t.id}" style="width:100%;height:46px;margin-top:12px">انضم</button>`}${adm?`<button class="sm no" data-tdel="${t.id}" style="margin-top:14px;display:block;width:100%;padding:8px">🗑 إلغاء الفريق كله</button>`:''}`)}
 Object.assign(SCH,{tm:{n:'الفرق',s:'فريق',ti:'name',l:()=>TM,mk:()=>({id:uid(),name:'',lab:LABS[0][0],max:4,desc:'',m:[],at:Date.now()}),get f(){return[['name','اسم الفريق'],['lab',AL(),LABS.map(l=>[l[0],l[0]])],['max','عدد الأفراد','n'],['desc','الوصف','ta']]},r:o=>o.lab+' — '+o.name+' ('+o.m.length+'/'+o.max+')'},labs:{get n(){return LP()},get s(){return LW()},ti:0,l:()=>LABS,mk:()=>['',''],f:[[0,'الاسم بالعربي'],[1,'الاسم بالإنجليزي']],r:o=>o[0]+(o[1]?' ⟵ '+o[1]:'')}});
 SCH.cfg.f.splice(SCH.cfg.f.findIndex(x=>x[0]=='sLb')+1,0,['sTm','قسم الفرق','on'],['lw','تسمية "اللاب" في الموقع (مفرد، من غير ال التعريف)'],['lwp','نفس التسمية بالجمع (عربي)'],['lwe','التسمية بالإنجليزي (مفرد، مثال: Lab)']);
-{const _a=applyCfg;applyCfg=function(){_a();const b=document.querySelector('nav button[data-v=tm]');if(b)b.style.display=(CFG.sTm===false)?'none':''}}
+{const _a=applyCfg;applyCfg=function(){_a();const b=document.querySelector('nav button[data-v=tm]');if(b)b.style.display=(CFG.sTm===false||FB.on)?'none':''}}
 document.addEventListener('click',e=>{const t=e.target.closest('[data-tnew],[data-tl],[data-tb],[data-tsend],[data-tj],[data-tlv],[data-tk],[data-tdel]');if(!t)return;const d=t.dataset;
 if(d.tnew!==undefined)tnew();
 else if(d.tl!==undefined){tlf=d.tl;go('tm')}
@@ -707,6 +707,27 @@ document.addEventListener('click',async e=>{const t=e.target.closest('[data-ft]'
  }catch(er){console.error(er);toast('حصل خطأ، جرب تاني')}});
 {const nv=document.querySelector('#nav [data-v=gpa]');if(nv)nv.insertAdjacentHTML('beforebegin','<button data-v="ft">⚽ دوري الجامعة</button>')}
 Object.assign(EN,{"⚽ دوري الجامعة":"⚽ University League","+ سجّل فريقك":"+ Register your team","لوحة الدوري":"League panel","كل الفرق":"All teams","المجموعة":"Group","البطل":"Champion"});
+// ===== وضع الصيانة =====
+// لو الموقع مش قادر يحفظ الإعدادات (مثلًا مشكلة في Firebase)، غيّر on:false إلى on:true هنا من GitHub
+const FILE_MT={on:false,msg:'',until:''};
+const mtD=()=>CFG.mt||(CFG.mt={on:false,msg:'',until:''});
+function mtTick(){const c=mtD(),F=FILE_MT.on,m=F?FILE_MT:c,on=F||c.on,$o=document.getElementById('mtov'),$b=document.getElementById('mtb');
+ if(!adm){if($b)$b.remove()}else if(!$b)document.body.insertAdjacentHTML('beforeend','<button id="mtb" class="chip" data-mt="set" style="position:fixed;bottom:12px;inset-inline-start:12px;z-index:38"></button>');
+ const b=document.getElementById('mtb');if(b){b.textContent=on?'🛠 الصيانة: شغالة':'🛠 الصيانة';b.style.background=on?'#d93025':'';b.style.color=on?'#fff':''}
+ if(!on||adm){if($o)$o.remove();return}
+ const msg=(m.msg||'').trim()||'الموقع في صيانة دلوقتي وهنرجع في أقرب وقت. شكرًا على صبركم 🙏';
+ if(!$o||$o.dataset.k!=msg)document.getElementById('mtov')?.remove(),document.body.insertAdjacentHTML('beforeend',`<div id="mtov" data-k="${esc(msg)}" style="position:fixed;inset:0;z-index:39;background:#0f172a;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;overflow:auto"><div style="font-size:56px">🛠</div><h1 style="margin:10px 0">الموقع في صيانة</h1><p style="max-width:520px;white-space:pre-wrap;line-height:1.8;font-size:17px;opacity:.9">${esc(msg)}</p><div id="mtc" style="margin-top:18px;font-size:34px;font-weight:800;font-variant-numeric:tabular-nums"></div><button data-mt="log" style="margin-top:28px;background:none;border:0;color:#fff;opacity:.35;font-size:12px;cursor:pointer">دخول المشرف</button></div>`);
+ const t=m.until?new Date(m.until).getTime():0,el=document.getElementById('mtc');if(!el)return;
+ if(!t||isNaN(t)){el.textContent='';return}
+ const df=t-Date.now();if(df<=0){el.textContent='هنرجع في أي لحظة…';return}
+ const S=Math.floor(df/1e3),d=Math.floor(S/86400),p=n=>String(n).padStart(2,'0');
+ el.textContent='هنرجع بعد '+(d?num(d)+' يوم ':'')+num(p(Math.floor(S%86400/3600))+':'+p(Math.floor(S%3600/60))+':'+p(S%60))}
+setInterval(mtTick,1000);mtTick();
+document.addEventListener('click',e=>{const t=e.target.closest('[data-mt]');if(!t)return;const k=t.dataset.mt,c=mtD();
+ if(k=='log'){loginM();return}if(!adm)return;
+ if(k=='set')modal(`<h2>🛠 وضع الصيانة</h2><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="mt_on" ${c.on?'checked':''}> تفعيل الصيانة (الموقع يتقفل على الكل ماعدا المشرف)</label><label>رسالة للناس</label><textarea id="mt_m" maxlength="600" style="min-height:110px" placeholder="مثال: بنظبط مشكلة في السيرفر وهنرجع قريب">${esc(c.msg||'')}</textarea><label>هنرجع امتى؟</label><input type="datetime-local" id="mt_u" value="${esc(c.until||'')}"><div class="fl" style="margin:8px 0"><button class="chip" data-mt="q" data-min="30">+٣٠ دقيقة</button><button class="chip" data-mt="q" data-min="60">+ساعة</button><button class="chip" data-mt="q" data-min="180">+٣ ساعات</button><button class="chip" data-mt="q" data-min="1440">+٢٤ ساعة</button><button class="chip" data-mt="q" data-min="0">بدون وقت</button></div><button class="cta" data-mt="save" style="width:100%;height:46px">حفظ</button>`);
+ else if(k=='q'){const m=+t.dataset.min;$('#mt_u').value=m?new Date(Date.now()+m*6e4-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,16):''}
+ else if(k=='save'){c.on=$('#mt_on').checked;c.msg=$('#mt_m').value.trim().slice(0,600);c.until=$('#mt_u').value;persist();$('#ov').innerHTML='';mtTick();toast(c.on?'🛠 الصيانة شغالة':'✅ الصيانة اتقفلت')}});
 </script>
 <script type="module">
 import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
