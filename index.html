@@ -553,7 +553,7 @@ function tnew(){modal(`<h2>اعمل فريق جديد</h2><label>اسم الفر
 function tdetail(id){const t=TM.find(x=>x.id==id);if(!t)return;const mem=tIs(t),vis=mem||adm;modal(`<h2 class="ugc">${esc(t.name)}</h2><small class="ugc" style="color:var(--mu)">${esc(t.lab)} • 👥 ${num(t.m.length)} / ${num(t.max)}</small>${t.desc?`<p class="ugc">${esc(t.desc)}</p>`:''}<h4>الأعضاء</h4>${t.m.map(m=>`<div class="rq"><span class="ugc"><b>${esc(m.n)}</b>${m.lead?' 👑':''}${vis?`<br><small style="color:var(--mu)">📞 ${esc(m.ph)}${adm?' • 🆔 '+esc(m.sid):''}</small>`:''}</span>${adm?`<button class="sm no" data-tk="${t.id}:${m.id}">طرد</button>`:''}</div>`).join('')}${mem?`<button class="chip" data-tlv="${t.id}" style="margin-top:12px">🚪 اترك الفريق</button>`:tFull(t)?'<div class="note er">الفريق مكتمل</div>':`<h4>انضم للفريق</h4>${tfields()}<button class="cta" data-tj="${t.id}" style="width:100%;height:46px;margin-top:12px">انضم</button>`}${adm?`<button class="sm no" data-tdel="${t.id}" style="margin-top:14px;display:block;width:100%;padding:8px">🗑 إلغاء الفريق كله</button>`:''}`)}
 Object.assign(SCH,{tm:{n:'الفرق',s:'فريق',ti:'name',l:()=>TM,mk:()=>({id:uid(),name:'',lab:LABS[0][0],max:4,desc:'',m:[],at:Date.now()}),get f(){return[['name','اسم الفريق'],['lab',AL(),LABS.map(l=>[l[0],l[0]])],['max','عدد الأفراد','n'],['desc','الوصف','ta']]},r:o=>o.lab+' — '+o.name+' ('+o.m.length+'/'+o.max+')'},labs:{get n(){return LP()},get s(){return LW()},ti:0,l:()=>LABS,mk:()=>['',''],f:[[0,'الاسم بالعربي'],[1,'الاسم بالإنجليزي']],r:o=>o[0]+(o[1]?' ⟵ '+o[1]:'')}});
 SCH.cfg.f.splice(SCH.cfg.f.findIndex(x=>x[0]=='sLb')+1,0,['sTm','قسم الفرق','on'],['lw','تسمية "اللاب" في الموقع (مفرد، من غير ال التعريف)'],['lwp','نفس التسمية بالجمع (عربي)'],['lwe','التسمية بالإنجليزي (مفرد، مثال: Lab)']);
-{const _a=applyCfg;applyCfg=function(){_a();const b=document.querySelector('nav button[data-v=tm]');if(b)b.style.display=(CFG.sTm===false||FB.on)?'none':''}}
+{const _a=applyCfg;applyCfg=function(){_a();const b=document.querySelector('nav button[data-v=tm]');if(b)b.style.display=(CFG.sTm===false)?'none':''}}
 document.addEventListener('click',e=>{const t=e.target.closest('[data-tnew],[data-tl],[data-tb],[data-tsend],[data-tj],[data-tlv],[data-tk],[data-tdel]');if(!t)return;const d=t.dataset;
 if(d.tnew!==undefined)tnew();
 else if(d.tl!==undefined){tlf=d.tl;go('tm')}
@@ -604,6 +604,9 @@ function onPend(n,docs){const A=docs.map(x=>{if(!idOf.has(x.cid))idOf.set(x.cid,
  else if(n=='messages')MSG=A.map(x=>({...x,type:TY[x.type]?x.type:'cs',rate:Math.min(5,Math.max(0,+x.rate||0))}));
  else if(n=='mrequests')MR=A.map(x=>({...x,price:+x.price||0,t:x.t||'',type:x.type||'',cat:x.cat||'',desc:x.desc||'',by:x.by||'',phone:x.phone||''}));
  else if(n=='lrequests')LR=A.map(x=>({...x,t:x.t||'',place:x.place||'',when:x.when||'',desc:x.desc||'',by:x.by||'',phone:x.phone||'',kind:x.kind||'ضايع'}));
+ else if(n=='jrequests'){JR=A;JRL=1;ftApply(JD)}
+ else if(n=='jdec'){JD=A;ftApply(JD)}
+ else if(n=='trequests')TRQ=A.map(x=>({...x,n:x.n||'',c:x.c||'#888888',p:Array.isArray(x.p)?x.p:[],ph:x.ph||''}));
  else if(n=='crequests')CR=A.map(x=>({...x,gal:Array.isArray(x.gal)?x.gal:[],e:x.e||'🎭',n:x.n||'',m:x.m||'',s:x.s||'',d:x.d||'',by:x.by||'',p:x.p||''}));
  navA();if(adm&&view=='adm'){const y=scrollY;go('adm');scrollTo(0,y)}}
 function afterCloud(){LOADING=false;const m=a=>a.reduce((x,y)=>Math.max(x,+y.id||0),0);nid=Math.max(nid,m(S)+1,m(MK)+1,m(LF)+1);normC();applyCfg();if(!adm)go(view)}
@@ -616,6 +619,95 @@ setTimeout(()=>{if(LOADING){LOADING=false;go(view)}},15000);
 restore();normC();
 applyCfg();go('sum');
 </script>
+<script>
+let TRQ=[],JR=[],JD=[],JRL=0,LD=null;const FTDN=new Set();
+const FT_RN={32:'دور الـ32',16:'دور الـ16',8:'ربع النهائي',4:'نصف النهائي',2:'النهائي'},FT_GL='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+document.head.insertAdjacentHTML('beforeend','<style>.ftt{width:100%;border-collapse:collapse;font-size:13px}.ftt th,.ftt td{padding:6px 4px;text-align:center;border-bottom:1px solid var(--bd)}.ftt td.ftn,.ftt th:nth-child(2){text-align:start}.ftd{display:inline-block;width:12px;height:12px;border-radius:50%;border:1px solid var(--bd);margin-inline-end:6px;vertical-align:middle}.ftm{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid var(--bd)}.ftm .ftn{flex:1;min-width:110px}.tns{width:52px;text-align:center;padding:4px;border:1px solid var(--bd);border-radius:8px;background:var(--cd)}</style>');
+const ftD=()=>CFG.ft||(CFG.ft={teams:[],matches:[],ro:0});
+const ftT=id=>ftD().teams.find(t=>t.id==id);
+const ftDot=c=>`<i class="ftd" style="background:${/^#[0-9a-f]{6}$/i.test(c)?c:'#888'}"></i>`;
+const ftNm=id=>{const t=ftT(id);return t?ftDot(t.c)+esc(t.n):'—'};
+const ftOk=m=>m.sa!=null&&m.sb!=null;
+const ftMk=(st,a,b,g)=>({id:uid(),st,g,a,b,sa:null,sb:null,pa:null,pb:null,d:''});
+const ftG=()=>[...new Set(ftD().teams.map(t=>t.g).filter(Boolean))].sort();
+const ftR=()=>{persist();const y=scrollY;go('ft');scrollTo(0,y)};
+function ftWin(m){if(!ftOk(m))return null;if(m.sa>m.sb)return m.a;if(m.sb>m.sa)return m.b;if(m.pa!=null&&m.pb!=null&&m.pa!=m.pb)return m.pa>m.pb?m.a:m.b;return null}
+function ftStand(g){const d=ftD(),R=new Map(d.teams.filter(t=>t.g==g).map(t=>[t.id,{t,p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}]));
+ d.matches.forEach(m=>{if(m.st!='g'||m.g!=g||!ftOk(m))return;const A=R.get(m.a),B=R.get(m.b);if(!A||!B)return;A.p++;B.p++;A.gf+=m.sa;A.ga+=m.sb;B.gf+=m.sb;B.ga+=m.sa;if(m.sa>m.sb){A.w++;B.l++;A.pts+=3}else if(m.sa<m.sb){B.w++;A.l++;B.pts+=3}else{A.d++;B.d++;A.pts++;B.pts++}});
+ return[...R.values()].sort((x,y)=>y.pts-x.pts||(y.gf-y.ga)-(x.gf-x.ga)||y.gf-x.gf||x.t.n.localeCompare(y.t.n,'ar'))}
+function ftRow(m,ko){const inp=(k,v)=>adm?`<input class="tns" type="number" min="0" max="99" data-k="${k}" value="${v==null?'':v}">`:`<b>${v==null?'-':num(v)}</b>`;
+ return`<div class="ftm" data-mid="${m.id}"><span class="ftn">${ftNm(m.a)}</span>${inp('sa',m.sa)}<span>:</span>${inp('sb',m.sb)}<span class="ftn">${ftNm(m.b)}</span>`+(ko&&(adm||m.pa!=null)?`<small>ركلات ${inp('pa',m.pa)}:${inp('pb',m.pb)}</small>`:'')+(adm?`<input type="date" data-k="d" value="${esc(m.d||'')}"><button class="chip" data-ft="sm">حفظ</button>`:(m.d?`<small>${esc(m.d)}</small>`:''))+'</div>'}
+
+const b64=b=>btoa(String.fromCharCode(...new Uint8Array(b))),ub=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0)),ftS=crypto.subtle,enc=new TextEncoder(),dec=new TextDecoder();
+const RSA={name:'RSA-OAEP',hash:'SHA-256'},EC={name:'ECDSA',namedCurve:'P-256'},ECS={name:'ECDSA',hash:'SHA-256'};
+async function ftK(pin,salt){const k=await ftS.importKey('raw',enc.encode(pin),'PBKDF2',false,['deriveKey']);return ftS.deriveKey({name:'PBKDF2',salt,iterations:150000,hash:'SHA-256'},k,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
+async function ftNew(pin){const R=await ftS.generateKey({...RSA,modulusLength:2048,publicExponent:new Uint8Array([1,0,1])},true,['encrypt','decrypt']),E=await ftS.generateKey(EC,true,['sign','verify']),s=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12)),blob=JSON.stringify({r:b64(await ftS.exportKey('pkcs8',R.privateKey)),s:b64(await ftS.exportKey('pkcs8',E.privateKey))}),d=await ftS.encrypt({name:'AES-GCM',iv},await ftK(pin,s),enc.encode(blob));
+ return{pk:b64(await ftS.exportKey('spki',R.publicKey)),sk:b64(await ftS.exportKey('spki',E.publicKey)),w:{s:b64(s),iv:b64(iv),d:b64(d)}}}
+const ftEnc=async(pk,o)=>b64(await ftS.encrypt({name:'RSA-OAEP'},await ftS.importKey('spki',ub(pk),RSA,false,['encrypt']),enc.encode(JSON.stringify(o))));
+async function ftOpen(t,pin){const w=t.w,b=JSON.parse(dec.decode(await ftS.decrypt({name:'AES-GCM',iv:ub(w.iv)},await ftK(pin,ub(w.s)),ub(w.d))));return{rsa:await ftS.importKey('pkcs8',ub(b.r),RSA,false,['decrypt']),ec:await ftS.importKey('pkcs8',ub(b.s),EC,false,['sign'])}}
+const ftDe=async(K,e)=>JSON.parse(dec.decode(await ftS.decrypt({name:'RSA-OAEP'},K.rsa,ub(e)))),ftSg=async(K,m)=>b64(await ftS.sign(ECS,K.ec,enc.encode(m))),ftVf=async(t,m,sg)=>ftS.verify(ECS,await ftS.importKey('spki',ub(t.sk),EC,false,['verify']),ub(sg),enc.encode(m));
+function ftAdm(){const d=ftD(),ok=[32,16,8,4,2].filter(k=>k<=d.teams.length);
+ return`<div class="panel"><h4>🛡 لوحة الدوري</h4><div class="fl"><button class="chip" data-ft="add">+ إضافة فريق (${num(d.teams.length)}/80)</button><button class="chip" data-ft="draw">🎲 توزيع المجموعات</button><select id="ftk">${ok.map(k=>`<option value="${k}">${FT_RN[k]}</option>`).join('')}</select><button class="chip" data-ft="ko">▶ بدء الأدوار الإقصائية</button><button class="chip" data-ft="next">⏭ الدور التالي</button><button class="chip" data-ft="rst">🗑 مسح الدوري</button></div><small style="color:var(--mu)">اضغط على أي فريق في "كل الفرق" عشان تطرد لاعب أو تضيف أو تعدّل أو تحذف الفريق.</small><h4>📥 طلبات تسجيل الفرق (${num(TRQ.length)})</h4>${TRQ.map(r=>`<div class="ftm"><span class="ftn">${ftDot(r.c)}${esc(r.n)} • قائد: ${esc(r.ln)} • ${esc(r.ph||'')}</span><button class="chip" data-ft="rinfo" data-id="${esc(r.cid)}">عرض</button><button class="chip" data-ft="ap" data-id="${esc(r.cid)}">قبول</button><button class="chip" data-ft="rj" data-id="${esc(r.cid)}">رفض</button></div>`).join('')||'<small style="color:var(--mu)">مفيش طلبات.</small>'}</div>`}
+V.ft=()=>{const d=ftD(),gs=ftG(),h=[`<section class="hero"><h1>⚽ دوري الجامعة</h1><p>مجموعات من ٤ فرق ثم أدوار إقصائية. سجّل فريقك أو انضم لفريق موجود.</p><button class="cta" data-ft="reg" style="height:42px">+ سجّل فريقك</button><div class="st"><div>${num(d.teams.length)}<small>فريق</small></div><div>${num(gs.length)}<small>مجموعة</small></div></div></section>`];
+ if(adm)h.push(ftAdm());
+ gs.forEach(g=>h.push(`<div class="panel"><h4>المجموعة ${g}</h4><div style="overflow-x:auto"><table class="ftt"><tr><th>#</th><th>الفريق</th><th>لعب</th><th>ف</th><th>ت</th><th>خ</th><th>له</th><th>عليه</th><th>فرق</th><th>نقاط</th></tr>${ftStand(g).map((r,i)=>`<tr><td>${num(i+1)}</td><td class="ftn">${ftNm(r.t.id)}</td><td>${num(r.p)}</td><td>${num(r.w)}</td><td>${num(r.d)}</td><td>${num(r.l)}</td><td>${num(r.gf)}</td><td>${num(r.ga)}</td><td>${num(r.gf-r.ga)}</td><td><b>${num(r.pts)}</b></td></tr>`).join('')}</table></div>${d.matches.filter(m=>m.st=='g'&&m.g==g).map(m=>ftRow(m)).join('')}</div>`));
+ [32,16,8,4,2].forEach(k=>{const ms=d.matches.filter(m=>m.st==k);if(ms.length)h.push(`<div class="panel"><h4>${FT_RN[k]}</h4>${ms.map(m=>ftRow(m,1)).join('')}</div>`)});
+ const fin=d.matches.find(m=>m.st==2&&ftWin(m));if(fin)h.push(`<div class="note" style="text-align:center;font-weight:800;font-size:18px">🏆 البطل: ${ftNm(ftWin(fin))}</div>`);
+ h.push(`<div class="panel"><h4>👥 كل الفرق (${num(d.teams.length)})</h4><div class="fl">${d.teams.map(t=>`<button class="chip" data-ft="tinfo" data-id="${esc(t.id)}">${ftDot(t.c)}${esc(t.n)} • ${num(t.m.length)}/${num(t.x)}${t.g?' • '+t.g:''}</button>`).join('')||'<span style="color:var(--mu)">مفيش فرق لسه.</span>'}</div></div>`);
+ return h.join('')};
+function ftInfo(T){modal(`<h2>${ftDot(T.c)}${esc(T.n)}</h2><div class="note">${num(T.m.length)} / ${num(T.x)} لاعب • ${T.m.length>=7?'✅ مكتمل للمشاركة':'⏳ لازم يوصل ٧ لاعبين على الأقل عشان يدخل القرعة'}</div>${T.m.map((m,i)=>`<div class="ftm"><span class="ftn">${m.l?'👑':i<5?'⭐':'🔁'} ${esc(m.n)}</span>${adm?`<button class="chip" data-ft="kick" data-id="${esc(T.id)}" data-i="${i}">طرد</button>`:''}</div>`).join('')}<small style="color:var(--mu)">⭐ أول ٥ أساسيين، والباقي بدلاء.</small><div class="fl" style="margin-top:10px">${T.m.length<T.x?`<button class="chip" data-ft="join" data-id="${esc(T.id)}">+ انضم للفريق</button>`:''}<button class="chip" data-ft="lead" data-id="${esc(T.id)}">🔑 قائد الفريق</button>${adm?['padd|+ لاعب','edit|✏️ تعديل','pin|🔐 PIN جديد','del|🗑 حذف الفريق'].map(x=>{const[a,b]=x.split('|');return`<button class="chip" data-ft="${a}" data-id="${esc(T.id)}">${b}</button>`}).join(''):''}</div>`)}
+function ftForm(a){modal(`<h2>${a?'إضافة فريق':'سجّل فريقك'}</h2><div class="note">الفريق لازم يوصل ٧ لاعبين على الأقل عشان يدخل الدوري، والحد الأقصى ١٠ (٥ أساسيين + ٥ بدلاء). باقي اللاعبين بيبعتوا طلب انضمام وانت كقائد بتقبل أو ترفض.</div><label>اسم الفريق</label><input id="ft_n" maxlength="30"><label>لون التيشرت</label><input id="ft_c" type="color" value="#d93025"><label>عدد لاعبين الفريق (٧ إلى ١٠)</label><select id="ft_x">${[7,8,9,10].map(n=>`<option>${n}</option>`).join('')}</select><label>اسم القائد</label><input id="ft_ln" maxlength="40"><label>الـ ID بتاع القائد</label><input id="ft_li" maxlength="20"><label>رقم تليفون القائد</label><input id="ft_h" type="tel" maxlength="20" placeholder="01012345678"><label>كلمة سر القائد (٦ حروف أو أرقام على الأقل)</label><input id="ft_pin" type="password" maxlength="40" autocomplete="new-password"><div class="note">كلمة السر بتفتح لك صندوق طلبات الانضمام. لو نسيتها المشرف يعمل لك واحدة جديدة.</div><button class="cta" data-ft="${a?'addsv':'regsv'}" style="width:100%;height:46px;margin-top:12px">${a?'إضافة':'إرسال الطلب'}</button>`)}
+async function ftBuild(a){const d=ftD(),n=$('#ft_n').value.trim(),c=$('#ft_c').value,x=+$('#ft_x').value,ln=$('#ft_ln').value.trim(),lid=$('#ft_li').value.trim(),ph=$('#ft_h').value.trim(),pin=$('#ft_pin').value;
+ if(n.length<2)return toast('اكتب اسم الفريق');if(!/^#[0-9a-f]{6}$/i.test(c))return toast('اختار لون صحيح');if(x<7||x>10)return toast('العدد من ٧ لـ ١٠');
+ if(ln.length<2)return toast('اكتب اسم القائد');if(lid.length<3)return toast('اكتب الـ ID');if(intl(ph).length<10)return toast('اكتب رقم تليفون صحيح');if(pin.length<6)return toast('كلمة السر ٦ على الأقل');
+ if(d.teams.length>=80)return toast('اكتمل عدد الفرق (٨٠)');if(d.teams.some(t=>nk(t.n)==nk(n))||(!a&&TRQ.some(t=>nk(t.n)==nk(n))))return toast('اسم الفريق موجود قبل كده');
+ toast('⏳ جاري التجهيز...');const K=await ftNew(pin);return{n,c,x,ln,lid,ph,...K,e0:await ftEnc(K.pk,{id:lid,ph})}}
+const ftTeamOf=r=>({id:uid(),n:r.n,c:r.c,x:r.x,g:'',pk:r.pk,sk:r.sk,w:r.w,m:[{n:r.ln,e:r.e0,l:1}]});
+async function ftApply(L){let ch=0;for(const o of L){const t=ftT(o.team),r=JR.find(x=>x.cid==o.rid);if(!r){if(JRL||!FB.on){if(FB.on)FB.del('jdec',o.cid)}continue}
+ try{if(t&&await ftVf(t,`${o.team}|${o.rid}|${o.ok}`,o.sig)){if(o.ok&&t.m.length<t.x&&!t.m.some(m=>nk(m.n)==nk(r.n)))t.m.push({n:r.n,e:r.e});ch=1}}catch(_){}
+ JR=JR.filter(x=>x.cid!=o.rid);if(FB.on){FB.del('jdec',o.cid);FB.del('jrequests',o.rid)}}
+ if(ch){persist();if(adm&&view=='ft')ftR()}}
+async function ftLead(T,K){const rq=(FB.on?await FB.get('jrequests'):JR).filter(r=>r.team==T.id&&!FTDN.has(r.cid)),L=[],M=[];
+ for(const r of rq)try{L.push({r,...await ftDe(K,r.e)})}catch(_){}
+ for(const m of T.m){let x={};try{if(m.e)x=await ftDe(K,m.e)}catch(_){}M.push([m,x])}
+ LD={T,K,L};modal(`<h2>👑 ${esc(T.n)}</h2><h4>طلبات الانضمام (${num(L.length)})</h4>${L.map(o=>`<div class="ftm"><span class="ftn">${esc(o.r.n)} • ${esc(o.id)} • ${esc(o.ph)}</span><button class="chip" data-ft="lok" data-rid="${esc(o.r.cid)}">قبول ✔</button><button class="chip" data-ft="lno" data-rid="${esc(o.r.cid)}">رفض ✖</button></div>`).join('')||'<small style="color:var(--mu)">مفيش طلبات جديدة.</small>'}<h4>الأعضاء (${num(T.m.length)}/${num(T.x)})</h4>${M.map(([m,x])=>`<div>${esc(m.n)}${x.id?' • '+esc(x.id)+' • '+esc(x.ph):''}</div>`).join('')}<div class="note">قرارك بيتطبق لما المشرف يفتح لوحة الدوري.</div>`)}
+document.addEventListener('click',async e=>{const t=e.target.closest('[data-ft]');if(!t)return;const k=t.dataset.ft,d=ftD(),id=t.dataset.id,T=ftT(id),A=['add','draw','ko','next','rst','sm','ap','rj','rinfo','kick','padd','edit','pin','del','addsv'];
+ if(A.includes(k)&&!adm)return;
+ try{
+ if(k=='reg')ftForm(0);
+ else if(k=='add')ftForm(1);
+ else if(k=='regsv'){const r=await ftBuild(0);if(!r)return;const{pk,sk,w,e0,n,c,x,ln,lid,ph}=r,q={cid:uid(),ts:Date.now(),n,c,x,ln,lid,ph,pk,sk,w,e0};TRQ.unshift({...q,id:nid++});if(FB.on)FB.add('trequests',q);$('#ov').innerHTML='';toast('اتبعت طلب الفريق للمراجعة ✅')}
+ else if(k=='addsv'){const r=await ftBuild(1);if(!r)return;d.teams.push(ftTeamOf(r));$('#ov').innerHTML='';ftR()}
+ else if(k=='ap'){const r=TRQ.find(x=>x.cid==id);if(!r)return;if(d.teams.length>=80)return toast('اكتمل عدد الفرق (٨٠)');d.teams.push(ftTeamOf(r));TRQ=TRQ.filter(x=>x.cid!=id);if(FB.on)FB.del('trequests',id);ftR()}
+ else if(k=='rj'){TRQ=TRQ.filter(x=>x.cid!=id);if(FB.on)FB.del('trequests',id);ftR()}
+ else if(k=='rinfo'){const r=TRQ.find(x=>x.cid==id);if(r)modal(`<h2>${ftDot(r.c)}${esc(r.n)}</h2><div>القائد: ${esc(r.ln)} • ${esc(r.lid)} • ${esc(r.ph)}</div><div>عدد اللاعبين المطلوب: ${num(r.x)}</div>`)}
+ else if(k=='tinfo'&&T)ftInfo(T);
+ else if(k=='join'&&T)modal(`<h2>انضم لفريق ${esc(T.n)}</h2><label>الاسم</label><input id="fj_n" maxlength="40"><label>الـ ID</label><input id="fj_i" maxlength="20"><label>رقم التليفون</label><input id="fj_h" type="tel" maxlength="20"><div class="note">طلبك بيوصل لقائد الفريق وهو اللي يقبل أو يرفض. الـ ID والتليفون بيتشفروا وميظهروش غير للقائد.</div><button class="cta" data-ft="joinsv" data-id="${esc(T.id)}" style="width:100%;height:46px;margin-top:12px">إرسال الطلب</button>`)
+ else if(k=='joinsv'&&T){const n=$('#fj_n').value.trim(),i=$('#fj_i').value.trim(),h=$('#fj_h').value.trim();if(n.length<2)return toast('اكتب اسمك');if(i.length<3)return toast('اكتب الـ ID');if(intl(h).length<10)return toast('اكتب رقم تليفون صحيح');if(T.m.length>=T.x)return toast('الفريق مكتمل');if(T.m.some(m=>nk(m.n)==nk(n)))return toast('الاسم ده موجود في الفريق');
+  const o={cid:uid(),ts:Date.now(),team:T.id,n,e:await ftEnc(T.pk,{id:i,ph:h})};if(FB.on)FB.add('jrequests',o);else JR.unshift(o);$('#ov').innerHTML='';toast('اتبعت طلبك لقائد الفريق ✅')}
+ else if(k=='lead'&&T)modal(`<h2>🔑 قائد ${esc(T.n)}</h2><label>كلمة السر</label><input id="fl_p" type="password" autocomplete="off"><button class="cta" data-ft="leadgo" data-id="${esc(T.id)}" style="width:100%;height:46px;margin-top:12px">دخول</button>`)
+ else if(k=='leadgo'&&T){let K;try{K=await ftOpen(T,$('#fl_p').value)}catch(_){return toast('كلمة السر غلط')}await ftLead(T,K)}
+ else if(k=='lok'||k=='lno'){const o=LD&&LD.L.find(x=>x.r.cid==t.dataset.rid);if(!o)return;const q={cid:uid(),ts:Date.now(),team:LD.T.id,rid:o.r.cid,ok:k=='lok'};q.sig=await ftSg(LD.K,`${q.team}|${q.rid}|${q.ok}`);FTDN.add(o.r.cid);if(FB.on)FB.add('jdec',q);else await ftApply([q]);await ftLead(LD.T,LD.K)}
+ else if(k=='kick'&&T){T.m.splice(+t.dataset.i,1);ftR();ftInfo(T)}
+ else if(k=='padd'&&T){const n=(prompt('اسم اللاعب')||'').trim();if(!n)return;if(T.m.length>=T.x)return toast('الفريق مكتمل');T.m.push({n:n.slice(0,40)});ftR();ftInfo(T)}
+ else if(k=='edit'&&T){const n=(prompt('اسم الفريق',T.n)||'').trim(),x=+prompt('عدد اللاعبين (٧ إلى ١٠)',T.x);if(n)T.n=n.slice(0,30);if(x>=Math.max(7,T.m.length)&&x<=10)T.x=x;ftR();ftInfo(T)}
+ else if(k=='pin'&&T){const p=prompt('كلمة سر جديدة للقائد (٦ على الأقل). ده هيمسح طلبات الانضمام المعلقة وبيانات التليفون المشفرة القديمة.')||'';if(p.length<6)return toast('٦ على الأقل');Object.assign(T,await ftNew(p));T.m.forEach(m=>m.e=null);JR.filter(r=>r.team==id).forEach(r=>{if(FB.on)FB.del('jrequests',r.cid)});JR=JR.filter(r=>r.team!=id);ftR();toast('تم ✅')}
+ else if(k=='del'&&T){if(!confirm('حذف الفريق '+T.n+' وكل مبارياته؟'))return;d.teams=d.teams.filter(x=>x.id!=id);d.matches=d.matches.filter(m=>m.a!=id&&m.b!=id);$('#ov').innerHTML='';ftR()}
+ else if(k=='draw'){const el=d.teams.filter(x=>x.m.length>=7),n=el.length,ng=Math.ceil(n/4);if(n<6||n<ng*3)return toast('محتاج ٦ فرق مكتملة (٧ لاعبين فأكتر) على الأقل، وكل مجموعة ٣ فرق على الأقل');if(d.matches.length&&!confirm('ده هيمسح كل النتائج. متأكد؟'))return;
+  d.teams.forEach(x=>x.g='');[...el].sort(()=>Math.random()-.5).forEach((x,i)=>x.g=FT_GL[i%ng]);d.matches=[];d.ro=0;
+  ftG().forEach(g=>{const ts=d.teams.filter(x=>x.g==g);for(let i=0;i<ts.length;i++)for(let j=i+1;j<ts.length;j++)d.matches.push(ftMk('g',ts[i].id,ts[j].id,g))});ftR();if(d.teams.length>n)toast('اتستبعد '+num(d.teams.length-n)+' فريق لسه ناقص عن ٧ لاعبين')}
+ else if(k=='ko'){const K=+$('#ftk').value,gs=ftG();if(!gs.length||!K)return toast('وزّع المجموعات الأول');if(d.matches.some(m=>m.st=='g'&&!ftOk(m)))return toast('لسه فيه مباريات مجموعات من غير نتيجة');if(d.ro&&!confirm('ده هيمسح الأدوار الإقصائية الحالية. متأكد؟'))return;
+  const q=[];gs.forEach(g=>ftStand(g).forEach((r,i)=>q.push({id:r.t.id,pos:i,pts:r.pts,gd:r.gf-r.ga,gf:r.gf})));q.sort((x,y)=>x.pos-y.pos||y.pts-x.pts||y.gd-x.gd||y.gf-x.gf);const s=q.slice(0,K);if(s.length<K)return toast('عدد المتأهلين أقل من '+num(K));
+  d.matches=d.matches.filter(m=>m.st=='g');d.ro=K;for(let i=0;i<K/2;i++)d.matches.push(ftMk(K,s[i].id,s[K-1-i].id));ftR()}
+ else if(k=='next'){const r=d.ro;if(!r)return toast('ابدأ الأدوار الإقصائية الأول');if(r==2)return toast('ده النهائي');const ms=d.matches.filter(m=>m.st==r);if(ms.some(m=>!ftWin(m)))return toast('كل مباراة لازم يبقى ليها فايز (لو تعادل سجّل ركلات الترجيح)');
+  for(let i=0;i<ms.length;i+=2)d.matches.push(ftMk(r/2,ftWin(ms[i]),ftWin(ms[i+1])));d.ro=r/2;ftR()}
+ else if(k=='rst'){if(confirm('مسح كل الفرق والمباريات؟')){CFG.ft={teams:[],matches:[],ro:0};ftR()}}
+ else if(k=='sm'){const row=t.closest('[data-mid]'),m=d.matches.find(x=>x.id==row.dataset.mid);if(!m)return;const v=q=>{const el=row.querySelector(`[data-k=${q}]`);if(!el||el.value==='')return null;return Math.max(0,Math.min(99,parseInt(el.value)||0))},sa=v('sa'),sb=v('sb'),pa=v('pa'),pb=v('pb'),dt=row.querySelector('[data-k=d]');
+  if((sa==null)!=(sb==null)||(pa==null)!=(pb==null))return toast('اكتب النتيجة للفريقين');Object.assign(m,{sa,sb,pa,pb,d:dt?dt.value:''});ftR()}
+ }catch(er){console.error(er);toast('حصل خطأ، جرب تاني')}});
+{const nv=document.querySelector('#nav [data-v=gpa]');if(nv)nv.insertAdjacentHTML('beforebegin','<button data-v="ft">⚽ دوري الجامعة</button>')}
+Object.assign(EN,{"⚽ دوري الجامعة":"⚽ University League","+ سجّل فريقك":"+ Register your team","لوحة الدوري":"League panel","كل الفرق":"All teams","المجموعة":"Group","البطل":"Champion"});
+</script>
 <script type="module">
 import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import{getAuth,signInWithEmailAndPassword,signOut}from'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
@@ -624,7 +716,7 @@ const C=window.FBCFG;
 if(C&&C.apiKey&&C.projectId){
 const app=initializeApp(C),au=getAuth(app),db=initializeFirestore(app,{experimentalAutoDetectLongPolling:true});
 /* المحتوى المنشور: كل عنصر في مستند لوحده (id = بالرقم، pos = بالترتيب). الطلبات والرسائل في مجموعات منفصلة */
-const LISTS=[['S','summaries','id'],['MK','market','id'],['LF','lostfound','id'],['NEWS','news','pos'],['CLUB','clubs','pos'],['ACT','activities','pos']],PEND=['requests','messages','mrequests','lrequests','crequests'];
+const LISTS=[['S','summaries','id'],['MK','market','id'],['LF','lostfound','id'],['NEWS','news','pos'],['CLUB','clubs','pos'],['ACT','activities','pos']],PEND=['requests','messages','mrequests','lrequests','crequests','trequests','jrequests','jdec'];
 const last=new Map(),pad=n=>String(n).padStart(4,'0');let tm=0,busy=false,again=false,unsubs=[],loaded=false;
 const wantMap=st=>{const w=new Map(),{logo,fav,hero,...cf}=st.CFG;
  w.set('site/config',JSON.stringify({CFG:cf,OV:st.OV,LINKS:st.LINKS,FAQ:st.FAQ,RULES:st.RULES,SUBL:st.SUBL,FAC:st.FAC,CP:st.CP,MKC:st.MKC,GR:st.GR,TR:st.TR,LABS:st.LABS}));
@@ -649,7 +741,8 @@ async function loadAll(){
  return d}
 Object.assign(FB,{on:true,login:(e,p)=>signInWithEmailAndPassword(au,e,p),logout:()=>signOut(au),
  add:(c,o)=>setDoc(doc(db,c,o.cid),JSON.parse(JSON.stringify(o))).catch(e=>{console.error(e);toast('تعذر الإرسال، حاول تاني')}),
- del:(c,id)=>deleteDoc(doc(db,c,id)).catch(e=>console.error(e)),
+ get:async c=>(await getDocs(collection(db,c))).docs.map(x=>x.data()),
+  del:(c,id)=>deleteDoc(doc(db,c,id)).catch(e=>console.error(e)),
  save(){if(!loaded){toast('لسه بحمّل المحتوى من السحابة، جرب كمان ثانية');return}clearTimeout(tm);tm=setTimeout(flush,600)},
  watch(cb){FB.unwatch();PEND.forEach(n=>unsubs.push(onSnapshot(collection(db,n),s=>cb(n,s.docs.map(x=>x.data())),e=>{console.error(n,e);toast('⚠ مفيش صلاحية لقراءة '+n)})))},
  unwatch(){unsubs.forEach(u=>{try{u()}catch(_){}});unsubs=[]}});
